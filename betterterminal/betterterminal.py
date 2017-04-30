@@ -23,11 +23,11 @@ class BetterTerminal:
     async def cmd(self, ctx):
 
         if ctx.message.channel.id in self.sessions:
-            await self.bot.say('Already running a BetteTerminal session in this channel. Exit it with `quit`')
+            await self.bot.say('Already running a BetterTerminal session in this channel. Exit it with `quit`')
             return
 
         self.sessions.append(ctx.message.channel.id)
-        await self.bot.say('Enter commands after {} to execute them. ``exit()` or `quit` to exit.'.format(self.prefix))
+        await self.bot.say('Enter commands after {} to execute them. `exit()` or `quit` to exit.'.format(self.prefix))
 
     @commands.group(pass_context=True)
     @checks.is_owner()
