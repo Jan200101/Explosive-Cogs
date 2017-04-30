@@ -4,8 +4,10 @@ from cogs.utils.dataIO import dataIO
 from cogs.utils.chat_formatting import pagify, box
 from subprocess import Popen, CalledProcessError, PIPE, STDOUT
 from os.path import expanduser, exists
-from os import makedirs
-
+from os import makedirs, getcwd
+from getpass import getuser
+from platform import uname
+from re import sub
 
 class BetterTerminal:
     """repl like Terminal in discord"""
@@ -55,6 +57,9 @@ class BetterTerminal:
             if message.content.startswith(self.prefix) and message.author.id == self.bot.settings.owner:
                 command = message.content.split(self.prefix)[1]
 
+                if not command:
+                    return
+
                 if command == 'exit()' or command == 'quit':
                     await self.bot.send_message(message.channel, 'Exiting.')
                     self.sessions.remove(message.channel.id)
@@ -74,6 +79,9 @@ class BetterTerminal:
 
                 if shell == "" and not error:
                     return
+
+                shell = sub('/bin/sh: .: ', '', shell)
+                shell = "{0}@{1}:{2} $ ".format(getuser(), uname()[1], getcwd().replace('/home/' + getuser(), "~")) + shell
 
                 for page in pagify(shell, shorten_by=20):
                     await self.bot.send_message(message.channel, box(page, 'Prolog'))
