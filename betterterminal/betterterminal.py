@@ -81,10 +81,13 @@ class BetterTerminal:
                     return
 
                 shell = sub('/bin/sh: .: ', '', shell)
-                shell = "{0}@{1}:{2} $ ".format(getuser(), uname()[1], getcwd().replace('/home/' + getuser(), "~")) + shell
+                if "\n" in shell[:-2]:
+                    shell = '\n' + shell
 
-                for page in pagify(shell, shorten_by=20):
-                    await self.bot.send_message(message.channel, box(page, 'Prolog'))
+                user = "{0}@{1}:{2} $ ".format(getuser(), uname()[1], getcwd().replace('/home/' + getuser(), "~"))
+
+                for page in pagify(user + shell, shorten_by=12):
+                    await self.bot.send_message(message.channel, box(page, 'Bash'))
 
 
 def check_folder():
