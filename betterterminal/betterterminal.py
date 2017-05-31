@@ -59,15 +59,8 @@ class BetterTerminal:
 
                 if not command:
                     return
-                
-                if command.startswith('cd ') and command.split('cd ')[1]:
-                    try:
-                        chdir(command.split('cd ')[1])
-                        continue
-                    except:
-                        print('Invalid Directory')
-                        continue
-                        
+
+
                 if command == 'exit()' or command == 'quit':
                     await self.bot.send_message(message.channel, 'Exiting.')
                     self.sessions.remove(message.channel.id)
@@ -76,14 +69,23 @@ class BetterTerminal:
                 if command.lower().find("apt-get install") != -1 and command.lower().find("-y") == -1:
                     command = "{} -y".format(command)
 
-                try:
-                    output = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0]
-                    error = False
-                except CalledProcessError as e:
-                    output = e.output
-                    error = True
+                if command.startswith('cd ') and command.split('cd ')[1]:
+                    try:
+                        chdir(command.split('cd ')[1])
+                        return
+                    except:
+                        output = 'Invalid Directory'
 
-                shell = output.decode('utf_8')
+                    shell = output
+                else:
+                    try:
+                        output = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0]
+                        error = False
+                    except CalledProcessError as e:
+                        output = e.output
+                        error = True
+
+                    shell = output.decode('utf_8')
 
                 if shell == "" and not error:
                     return
