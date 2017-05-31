@@ -4,7 +4,7 @@ from cogs.utils.dataIO import dataIO
 from cogs.utils.chat_formatting import pagify, box
 from subprocess import Popen, CalledProcessError, PIPE, STDOUT
 from os.path import expanduser, exists
-from os import makedirs, getcwd
+from os import makedirs, getcwd, chdir
 from getpass import getuser
 from platform import uname
 from re import sub
@@ -59,7 +59,15 @@ class BetterTerminal:
 
                 if not command:
                     return
-
+                
+                if command.startswith('cd ') and command.split('cd ')[1]:
+                    try:
+                        chdir(command.split('cd ')[1])
+                        continue
+                    except:
+                        print('Invalid Directory')
+                        continue
+                        
                 if command == 'exit()' or command == 'quit':
                     await self.bot.send_message(message.channel, 'Exiting.')
                     self.sessions.remove(message.channel.id)
