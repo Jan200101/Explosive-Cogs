@@ -27,7 +27,8 @@ class BetterTerminal:
             return
 
         self.sessions.append(ctx.message.channel.id)
-        await self.bot.say('Enter commands after {} to execute them. `exit()` or `quit` to exit.'.format(self.prefix))
+        await self.bot.say('Enter commands after {} to execute them. `exit()` or `quit` to exit.'.format(self.prefix.replace("`", "\\`")))
+
 
     @commands.group(pass_context=True)
     @checks.is_owner()
@@ -43,7 +44,7 @@ class BetterTerminal:
         self.prefix = prefix
         self.settings['prefix'] = self.prefix
         dataIO.save_json('data/betterterminal/settings.json', self.settings)
-        await self.bot.say('`Changed max search results to {} `'.format(self.prefix))
+        await self.bot.say('Changed prefix to {} '.format(self.prefix.replace("`", "\\`")))
 
     async def on_message(self, message):
 
