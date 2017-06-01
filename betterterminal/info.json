@@ -3,6 +3,6 @@
     "INSTALL_MSG" : "Thank you for installing this cog.",
     "NAME" : "BetterTerminal",
     "SHORT" : "a simple Terminal cog",
-    "DESCRIPTION" : "a simple Terminal cog",
-    "TAGS": ["terminal","Windows","Linux","Useful","Sentry"]
+    "DESCRIPTION" : "a simple Terminal cog usable by any Python based Discord bot",
+    "TAGS": ["Terminal","cmd","prompt","Windows","Linux","Useful","Sentry"]
 }
