@@ -4,7 +4,7 @@ from cogs.utils.dataIO import dataIO
 from cogs.utils.chat_formatting import pagify, box
 from subprocess import Popen, CalledProcessError, PIPE, STDOUT
 from os.path import expanduser, exists
-from os import makedirs, getcwd, chdir
+from os import makedirs, getcwd, chdir, listdir
 from getpass import getuser
 from platform import uname
 from re import sub
@@ -46,41 +46,49 @@ class BetterTerminal:
         dataIO.save_json('data/betterterminal/settings.json', self.settings)
         await self.bot.say('Changed prefix to {} '.format(self.prefix.replace("`", "\\`")))
 
-    async def on_message(self, message):
+    async def on_message(self, message): # This is where the magic starts
 
-        if message.channel.id in self.sessions:
+        if message.channel.id in self.sessions: # Check if the current channel is the one cmd got started in
+
+            #TODO:
+            #  Whitelist & Blacklists
 
 
-            if not self.prefix:
+            if not self.prefix: # Making little 1337 Hax0rs not fuck this command up
                 check_folder()
                 check_file()
 
             if message.content.startswith(self.prefix) and message.author.id == self.bot.settings.owner:
                 command = message.content.split(self.prefix)[1]
+                # check if the message starts with the command prefix and if the bot owner is writing
 
-                if not command:
+                if not command: # if you have entered nothing it will just ignore
                     return
 
 
-                if command == 'exit()' or command == 'quit':
+                if command == 'exit()' or command == 'quit':  # commands used for quiting cmd, same as for repl
                     await self.bot.send_message(message.channel, 'Exiting.')
                     self.sessions.remove(message.channel.id)
                     return
 
                 if command.lower().find("apt-get install") != -1 and command.lower().find("-y") == -1:
-                    command = "{} -y".format(command)
+                    command = "{} -y".format(command) # forces apt-get to not ask for a prompt
 
                 if command.startswith('cd ') and command.split('cd ')[1]:
+                    path = command.split('cd ')[1]
                     try:
-                        chdir(command.split('cd ')[1])
+                        chdir(path) # method of switching direcorys. Buggy but it works for now
                         return
                     except:
-                        output = 'Invalid Directory'
+                        if command.split('cd ')[1] in listdir():
+                            output = 'Could not enter Directory'
+                        else:
+                            output = '\'{}\' is not a valid direcotry'.format(command.split('cd ')[1])
 
                     shell = output
                 else:
                     try:
-                        output = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0]
+                        output = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0] # This is what proccesses the commands and returns their output
                         error = False
                     except CalledProcessError as e:
                         output = e.output
@@ -88,14 +96,14 @@ class BetterTerminal:
 
                     shell = output.decode('utf_8')
 
-                if shell == "" and not error:
+                if shell == "" and not error: # check if the previous run command is giving output and is not a error
                     return
 
                 shell = sub('/bin/sh: .: ', '', shell)
                 if "\n" in shell[:-2]:
                     shell = '\n' + shell
 
-                user = "{0}@{1}:{2} $ ".format(getuser(), uname()[1], getcwd().replace('/home/' + getuser(), "~"))
+                user = "{0}@{1}:{2} $ ".format(getuser(), uname()[1], getcwd().replace('/home/' + getuser(), "~")) # the thing adding the good looking terminal like interface
 
                 for page in pagify(user + shell, shorten_by=12):
                     await self.bot.send_message(message.channel, box(page, 'Bash'))
