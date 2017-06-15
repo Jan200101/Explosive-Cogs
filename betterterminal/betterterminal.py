@@ -20,24 +20,6 @@ class BetterTerminal:
         self.os = self.settings['os']
         self.sessions = []
 
-    @commands.command(hidden=True)
-    async def debugcmd(self):
-
-        os = uname()[0].lower()
-
-        if os.lower() in self.os:
-            path = getcwd()
-            username = getuser()
-            system = uname()[1]
-            user = self.os[os.lower()].format(user=username, system=system, path=path)
-        else:
-            path = getcwd()
-            username = getuser()
-            system = uname()[1]
-            user = self.os['linux'].format(user=username, system=system, path=path)
-
-        await self.bot.say(user)
-
     @commands.command(pass_context=True)
     @checks.is_owner()
     async def cmd(self, ctx):
