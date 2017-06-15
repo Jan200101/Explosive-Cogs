@@ -10,13 +10,33 @@ from platform import uname
 from re import sub
 
 class BetterTerminal:
-    """repl like Terminal in discord"""
+    """Repl like Terminal in discord"""
 
     def __init__(self, bot):
         self.bot = bot
         self.settings = dataIO.load_json('data/betterterminal/settings.json')
         self.prefix = self.settings['prefix']
+        self.cc = self.settings['cc']
+        self.os = self.settings['os']
         self.sessions = []
+
+    @commands.command(hidden=True)
+    async def debugcmd(self):
+
+        os = uname()[0].lower()
+
+        if os.lower() in self.os:
+            path = getcwd()
+            username = getuser()
+            system = uname()[1]
+            user = self.os[os.lower()].format(user=username, system=system, path=path)
+        else:
+            path = getcwd()
+            username = getuser()
+            system = uname()[1]
+            user = self.os['linux'].format(user=username, system=system, path=path)
+
+        await self.bot.say(user)
 
     @commands.command(pass_context=True)
     @checks.is_owner()
@@ -74,18 +94,19 @@ class BetterTerminal:
                 if command.lower().find("apt-get install") != -1 and command.lower().find("-y") == -1:
                     command = "{} -y".format(command) # forces apt-get to not ask for a prompt
 
+                if command in self.cc:
+                    command = self.cc[command]
+
                 if command.startswith('cd ') and command.split('cd ')[1]:
                     path = command.split('cd ')[1]
                     try:
-                        chdir(path) # method of switching direcorys. Buggy but it works for now
+                        chdir(path)
                         return
                     except:
                         if command.split('cd ')[1] in listdir():
-                            output = 'Could not enter Directory'
+                            shell = 'cd: {}: Permission denied'.format(command.split('cd ')[1])
                         else:
-                            output = '\'{}\' is not a valid direcotry'.format(command.split('cd ')[1])
-
-                    shell = output
+                            shell = 'cd: {}: No such file or directory'.format(command.split('cd ')[1])
                 else:
                     try:
                         output = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0] # This is what proccesses the commands and returns their output
@@ -103,7 +124,18 @@ class BetterTerminal:
                 if "\n" in shell[:-2]:
                     shell = '\n' + shell
 
-                user = "{0}@{1}:{2} $ ".format(getuser(), uname()[1], getcwd().replace('/home/' + getuser(), "~")) # the thing adding the good looking terminal like interface
+                os = uname()[0].lower()
+
+                if os.lower() in self.os:
+                    path = getcwd()
+                    username = getuser()
+                    system = uname()[1]
+                    user = self.os[os.lower()].format(user=username, system=system, path=path)
+                else:
+                    path = getcwd()
+                    username = getuser()
+                    system = uname()[1]
+                    user = self.os['linux'].format(user=username, system=system, path=path)
 
                 for page in pagify(user + shell, shorten_by=12):
                     await self.bot.send_message(message.channel, box(page, 'Bash'))
@@ -116,9 +148,18 @@ def check_folder():
 
 
 def check_file():
+    jdict = {
+        "prefix":">",
+        "cc":{'test':'printf "Hello.\nThis is a custom command made using the magic of ~~unicorn poop~~ python.\nLook into /data/BetterTerminal'},
+        "os":{
+            'windows':'{path}>',
+            'linux':'{user}@{system}:{path} $ '
+            }
+        }
+
     if not dataIO.is_valid_json("data/betterterminal/settings.json"):
-        print("[BetterTerminal]Creating default whitelist.json...")
-        dataIO.save_json("data/betterterminal/settings.json", {"prefix":">"})
+        print("[BetterTerminal]Creating default settings.json...")
+        dataIO.save_json("data/betterterminal/settings.json", jdict)
 
 
 def setup(bot):
