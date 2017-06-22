@@ -1,6 +1,6 @@
 {
     "AUTHOR" : "Sentry",
-    "INSTALL_MSG" : "Thank you for installing embednotification.\nIts part of the cogs from Sentry-Cogs rewritten for a better use",
+    "INSTALL_MSG" : "Thank you for installing EmbedNotification.\nIts part of the cogs from Sentry-Cogs rewritten for a better use",
     "NAME" : "embednotification",
     "SHORT" : "Allows you to quickly embed notification and set a nice color",
     "DESCRIPTION" : "Gives you the option to embed notification into a good looking embed with a colored sidebar which can be set using a hexadecimal color value",

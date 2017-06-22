@@ -1,6 +1,6 @@
 {
     "AUTHOR" : "Sentry",
-    "INSTALL_MSG" : "Thank you for installing this cog.",
+    "INSTALL_MSG" : "Thank you for installing BetterTerminal.\nIts part of the cogs from Sentry-Cogs rewritten for a better use",
     "NAME" : "BetterTerminal",
     "SHORT" : "a simple Terminal cog",
     "DESCRIPTION" : "a simple Terminal cog usable by any Python based Discord bot",
