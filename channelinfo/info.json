@@ -1,0 +1,8 @@
+{
+    "AUTHOR" : "Sentry",
+    "SHORT" : "a channel info command",
+    "DESCRIPTION" : "a command made to view Information about a voice or text channel",
+    "NAME" : "Channelinfo",
+    "INSTALL_MSG" : "Thank you for installing ChannelInfo.\nIts part of the cogs from Sentry-Cogs rewritten for a better use",
+    "TAGS": ["info","channel"]
+}
