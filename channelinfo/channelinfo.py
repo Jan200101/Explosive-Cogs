@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 from .utils.chat_formatting import pagify, box
-from random import randint
+from random import randint, choice
 
 class Channelinfo:
     """Shows Channel infos."""
