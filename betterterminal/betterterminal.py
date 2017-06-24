@@ -14,7 +14,7 @@ class BetterTerminal:
 
     def __init__(self, bot):
         self.bot = bot
-        self.settings = dataIO.load_json('data/betterterminal/settings.json')
+        self.settings = dataIO.load_json('data/betterterminal/settings.json') # Initial load of values making sure they are read right when the cog loads
         self.prefix = self.settings['prefix']
         self.cc = self.settings['cc']
         self.os = self.settings['os']
@@ -27,6 +27,19 @@ class BetterTerminal:
         if ctx.message.channel.id in self.sessions:
             await self.bot.say('Already running a BetterTerminal session in this channel. Exit it with `quit`')
             return
+
+        # Rereading the values that were already read in __init__ to ensure its always up to date
+        try:
+            self.settings = dataIO.load_json('data/betterterminal/settings.json')
+        except:
+            # Pretend its the worst case and reset the settings
+            check_folder()
+            check_file()
+            self.settings = dataIO.load_json('data/betterterminal/settings.json')
+
+        self.prefix = self.settings['prefix']
+        self.cc = self.settings['cc']
+        self.os = self.settings['os']
 
         self.sessions.append(ctx.message.channel.id)
         await self.bot.say('Enter commands after {} to execute them. `exit()` or `quit` to exit.'.format(self.prefix.replace("`", "\\`")))
@@ -53,8 +66,7 @@ class BetterTerminal:
         if message.channel.id in self.sessions: # Check if the current channel is the one cmd got started in
 
             #TODO:
-            #  Whitelist & Blacklists
-
+            #  Whitelist & Blacklists that cant be modified by red
 
             if not self.prefix: # Making little 1337 Hax0rs not fuck this command up
                 check_folder()
@@ -85,10 +97,10 @@ class BetterTerminal:
                         chdir(path)
                         return
                     except:
-                        if command.split('cd ')[1] in listdir():
-                            shell = 'cd: {}: Permission denied'.format(command.split('cd ')[1])
+                        if path in listdir() or path.startswith('/'):
+                            shell = 'cd: {}: Permission denied'.format(path)
                         else:
-                            shell = 'cd: {}: No such file or directory'.format(command.split('cd ')[1])
+                            shell = 'cd: {}: No such file or directory'.format(path)
                 else:
                     try:
                         output = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0] # This is what proccesses the commands and returns their output
@@ -132,7 +144,7 @@ def check_folder():
 def check_file():
     jdict = {
         "prefix":">",
-        "cc":{'test':'printf "Hello.\nThis is a custom command made using the magic of ~~unicorn poop~~ python.\nLook into /data/BetterTerminal'},
+        "cc":{'test' : 'printf "Hello.\nThis is a custom command made using the magic of ~~unicorn poop~~ python.\nLook into /data/BetterTerminal"'},
         "os":{
             'windows':'{path}>',
             'linux':'{user}@{system}:{path} $ '
