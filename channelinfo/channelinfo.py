@@ -38,7 +38,7 @@ class Channelinfo:
         data.add_field(name="Type", value=channel.type)
         data.add_field(name="Position", value=channel.position)
 
-        if channel.type == "voice":
+        if '{}'.format(channel.type) == "voice":
             if channel.user_limit != 0:
                 data.add_field(
                     name="User Number", value="{}/{}".format(len(channel.voice_members), channel.user_limit))
