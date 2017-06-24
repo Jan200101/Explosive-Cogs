@@ -20,7 +20,7 @@ class EmbedNotification:
             try:
                 await self.bot.delete_message(ctx.message)
             except:
-                await self.bot.send_message(ctx.message.author, 'I will stop embedding because I could not delete your message in {}'.format(ctx.message.channel.mention))
+                await self.bot.send_message(ctx.message.author, 'I will stop the embedding because I could not delete your message in {}'.format(ctx.message.channel.mention))
                 return
 
         color = color[:6]
@@ -40,6 +40,12 @@ class EmbedNotification:
         except:
             await self.bot.send_message(ctx.message.author,"I need the `Embed links` permission on `{}` to the embeded message".format(ctx.message.server))
 
+    @commands.command(hidden=True, pass_context=True, no_pm=True)
+    @checks.admin_or_permissions(administrator=True)
+    async def embedsay(self, ctx, *, text: str):
+        colour = ''.join([choice('0123456789ABCDEF') for x in range(5)])
+        colour = int(colour, 16)
+        await ctx.invoke(self.embednotification, text=text, color=str(colour))
 
 def setup(bot):
     bot.add_cog(EmbedNotification(bot))
