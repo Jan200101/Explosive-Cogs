@@ -68,6 +68,10 @@ class BetterTerminal:
             #TODO:
             #  Whitelist & Blacklists that cant be modified by red
 
+            def check(m):
+                if m.content.strip().lower() == "more":
+                    return True
+
             if not self.prefix: # Making little 1337 Hax0rs not fuck this command up
                 check_folder()
                 check_file()
@@ -131,8 +135,28 @@ class BetterTerminal:
                     system = uname()[1]
                     user = self.os['linux'].format(user=username, system=system, path=path)
 
-                for page in pagify(user + shell, shorten_by=12):
-                    await self.bot.send_message(message.channel, box(page, 'Bash'))
+                result = list(pagify(user + shell, shorten_by=12))
+
+                for x, output in enumerate(result):
+                    if x % 2 == 0 and x != 0:
+                        # TODO
+                        #  Change it up to a reaction based system like repl
+                        #  change up certain things. For example making a print template in the settings print character number not page number
+
+                        note = await self.bot.send_message(message.channel, 'There are still {} pages left.\nType `more` to continue.'.format(len(result) - (x+1)))
+                        msg = await self.bot.wait_for_message(author=message.author,
+                                                      channel=message.channel,
+                                                      check=check,
+                                                      timeout=12)
+                        if msg == None:
+                            try:
+                                await self.bot.delete_message(note)
+                            except:
+                                pass
+                            finally:
+                                break
+
+                    await self.bot.send_message(message.channel, box(output, 'Bash'))
 
 
 def check_folder():
