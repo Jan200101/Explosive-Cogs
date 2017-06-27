@@ -18,6 +18,7 @@ class BetterTerminal:
         self.prefix = self.settings['prefix']
         self.cc = self.settings['cc']
         self.os = self.settings['os']
+        self.enabled = self.settings['enabled']
         self.sessions = []
 
     @commands.command(pass_context=True)
@@ -63,7 +64,7 @@ class BetterTerminal:
 
     async def on_message(self, message): # This is where the magic starts
 
-        if message.channel.id in self.sessions: # Check if the current channel is the one cmd got started in
+        if message.channel.id in self.sessions and self.enabled: # Check if the current channel is the one cmd got started in
 
             #TODO:
             #  Whitelist & Blacklists that cant be modified by red
@@ -172,7 +173,8 @@ def check_file():
         "os":{
             'windows':'{path}>',
             'linux':'{user}@{system}:{path} $ '
-            }
+            },
+        "enabled":True
         }
 
     if not dataIO.is_valid_json("data/betterterminal/settings.json"):
