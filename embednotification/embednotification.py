@@ -13,7 +13,7 @@ class EmbedNotification:
 
     @commands.command(pass_context=True, no_pm=True, aliases=['embedm'])
     @checks.admin_or_permissions(administrator=True)
-    async def embednotification(self, ctx, text: str, color: str='000000':
+    async def embednotification(self, ctx, text: str, color: str='000000'):
         """Send a embed useful for announcements"""
 
         if ctx.message.server.me.bot: # Check if user is a bot. If the user is bot there is no need to check for this
