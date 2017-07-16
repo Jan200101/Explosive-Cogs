@@ -56,11 +56,11 @@ class EmbedNotification:
         color = int(colour, 16)
         await ctx.invoke(self.embednotification, text=text, color=str(colour), ignore_deletion=True)
 
-            try:
-                await self.bot.delete_message(ctx.message)
-            except:
-                await self.bot.send_message(ctx.message.server.get_member(self.bot.settings.owner), 'Your selfbot/This userbot is able to be used by others.\nThis is breaking Discords TOS and can be punished by them.\nThis messagte was send my embednotification.py')
-                return
+        try:
+            await self.bot.delete_message(ctx.message)
+        except:
+            await self.bot.send_message(ctx.message.server.get_member(self.bot.settings.owner), 'Your selfbot/This userbot is able to be used by others.\nThis is breaking Discords TOS and can be punished by them.\nThis messagte was send my embednotification.py')
+            return
 
         if not normaltext:
             normaltext = u"\u2063" * randint(1, 10) # Generating a random number for a empty embed
