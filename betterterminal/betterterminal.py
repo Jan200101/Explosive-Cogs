@@ -1,7 +1,7 @@
 from discord.ext import commands
 from cogs.utils import checks
 from cogs.utils.dataIO import dataIO
-from cogs.utils.chat_formatting import pagify, box
+from cogs.utils.chat_formatting import box
 from subprocess import Popen, CalledProcessError, PIPE, STDOUT
 from os.path import expanduser, exists
 from os import makedirs, getcwd, chdir, listdir
@@ -64,6 +64,9 @@ class BetterTerminal:
 
     async def on_message(self, message): # This is where the magic starts
 
+        if self.bot.user.id != message.author.id:
+            return
+
         if message.channel.id in self.sessions and self.enabled: # Check if the current channel is the one cmd got started in
 
             #TODO:
@@ -77,15 +80,15 @@ class BetterTerminal:
                 check_folder()
                 check_file()
 
-            if message.content.startswith(self.prefix) and message.author.id == self.bot.settings.owner:
+            if message.content.startswith(self.prefix) or message.content.startswith('debugprefixcmd'):
                 command = message.content.split(self.prefix)[1]
-                # check if the message starts with the command prefix and if the bot owner is writing
+                # check if the message starts with the command prefix
 
                 if not command: # if you have entered nothing it will just ignore
                     return
 
 
-                if command == 'exit()' or command == 'quit':  # commands used for quiting cmd, same as for repl
+                if command == 'exit()':  # commands used for quiting cmd, same as for repl
                     await self.bot.send_message(message.channel, 'Exiting.')
                     self.sessions.remove(message.channel.id)
                     return
@@ -136,7 +139,24 @@ class BetterTerminal:
                     system = uname()[1]
                     user = self.os['linux'].format(user=username, system=system, path=path)
 
-                result = list(pagify(user + shell, shorten_by=12))
+                result = []
+                in_text = text = user + shell
+                shorten_by = 12
+                page_length=2000
+                num_mentions = text.count("@here") + text.count("@everyone")
+                shorten_by += num_mentions
+                page_length -= shorten_by
+                while len(in_text) > page_length:
+                    closest_delim = max([in_text.rfind(d, 0, page_length)
+                                         for d in ["\n"]])
+                    closest_delim = closest_delim if closest_delim != -1 else page_length
+                    to_send = in_text[:closest_delim].replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
+                    result.append(to_send)
+                    in_text = in_text[closest_delim:]
+
+                result.append(in_text.replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere"))
+
+                #result = list(pagify(user + shell, shorten_by=12))
 
                 for x, output in enumerate(result):
                     if x % 2 == 0 and x != 0:
@@ -160,11 +180,11 @@ class BetterTerminal:
                     await self.bot.send_message(message.channel, box(output, 'Bash'))
 
 
+
 def check_folder():
     if not exists("data/betterterminal"):
         print("[Terminal]Creating data/betterterminal folder...")
         makedirs("data/betterterminal")
-
 
 def check_file():
     jdict = {
@@ -180,7 +200,6 @@ def check_file():
     if not dataIO.is_valid_json("data/betterterminal/settings.json"):
         print("[BetterTerminal]Creating default settings.json...")
         dataIO.save_json("data/betterterminal/settings.json", jdict)
-
 
 def setup(bot):
     check_folder()
