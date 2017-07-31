@@ -1,7 +1,6 @@
 from discord.ext import commands
 from cogs.utils import checks
 from cogs.utils.dataIO import dataIO
-from cogs.utils.chat_formatting import box
 from subprocess import Popen, CalledProcessError, PIPE, STDOUT
 from os.path import expanduser, exists
 from os import makedirs, getcwd, chdir, listdir
@@ -24,9 +23,9 @@ class BetterTerminal:
     @commands.command(pass_context=True)
     @checks.is_owner()
     async def cmd(self, ctx):
-
+        """Starts up the prompt"""
         if ctx.message.channel.id in self.sessions:
-            await self.bot.say('Already running a BetterTerminal session in this channel. Exit it with `quit`')
+            await self.bot.say('Already running a Terminal session in this channel. Exit it with `exit()`')
             return
 
         # Rereading the values that were already read in __init__ to ensure its always up to date
@@ -43,19 +42,33 @@ class BetterTerminal:
         self.os = self.settings['os']
 
         self.sessions.append(ctx.message.channel.id)
-        await self.bot.say('Enter commands after {} to execute them. `exit()` or `quit` to exit.'.format(self.prefix.replace("`", "\\`")))
+        await self.bot.say('Enter commands after {} to execute them. `exit()` to exit.'.format(self.prefix.replace("`", "\\`")))
 
 
     @commands.group(pass_context=True)
-    @checks.is_owner()
     async def cmdsettings(self, ctx):
-        """Settings for BetterTerminal"""
+        """Settings for Terminal"""
         if ctx.invoked_subcommand is None:
-            await self.bot.send_cmd_help(ctx)
+            pages = self.bot.formatter.format_help_for(ctx, ctx.command)
+            for page in pages:
+                await self.bot.send_message(ctx.message.channel, page)
 
     @cmdsettings.command(name="prefix", pass_context=True)
-    async def _prefix(self, ctx, prefix:str):
+    @checks.is_owner()
+    async def _prefix(self, ctx, prefix:str=None):
         """Set the prefix for the Terminal"""
+
+        if prefix is None:
+            if ctx.invoked_subcommand:
+                pages = self.bot.formatter.format_help_for(ctx, ctx.invoked_subcommand)
+                for page in pages:
+                    await self.bot.send_message(ctx.message.channel, page)
+            else:
+                pages = self.bot.formatter.format_help_for(ctx, ctx.command)
+                for page in pages:
+                    await self.bot.send_message(ctx.message.channel, page)
+            await self.bot.say('```\nCurrent prefix: {} ```\n'.format(self.prefix))
+            return
 
         self.prefix = prefix
         self.settings['prefix'] = self.prefix
@@ -63,9 +76,6 @@ class BetterTerminal:
         await self.bot.say('Changed prefix to {} '.format(self.prefix.replace("`", "\\`")))
 
     async def on_message(self, message): # This is where the magic starts
-
-        if self.bot.user.id != message.author.id:
-            return
 
         if message.channel.id in self.sessions and self.enabled: # Check if the current channel is the one cmd got started in
 
@@ -97,7 +107,10 @@ class BetterTerminal:
                     command = "{} -y".format(command) # forces apt-get to not ask for a prompt
 
                 if command in self.cc:
-                    command = self.cc[command]
+                    if self.cc[command][uname()[0].lower()]:
+                        command = self.cc[command][uname()[0].lower()]
+                    else:
+                        command = self.cc[command]['linux']
 
                 if command.startswith('cd ') and command.split('cd ')[1]:
                     path = command.split('cd ')[1]
@@ -126,13 +139,11 @@ class BetterTerminal:
                 if "\n" in shell[:-2]:
                     shell = '\n' + shell
 
-                os = uname()[0].lower()
-
-                if os.lower() in self.os:
+                if uname()[0].lower() in self.os:
                     path = getcwd()
                     username = getuser()
                     system = uname()[1]
-                    user = self.os[os.lower()].format(user=username, system=system, path=path)
+                    user = self.os[uname()[0].lower()].format(user=username, system=system, path=path)
                 else:
                     path = getcwd()
                     username = getuser()
@@ -177,7 +188,7 @@ class BetterTerminal:
                             finally:
                                 break
 
-                    await self.bot.send_message(message.channel, box(output, 'Bash'))
+                    await self.bot.send_message(message.channel, '```Bash\n{}```'.format(output))
 
 
 
@@ -189,7 +200,9 @@ def check_folder():
 def check_file():
     jdict = {
         "prefix":">",
-        "cc":{'test' : 'printf "Hello.\nThis is a custom command made using the magic of ~~unicorn poop~~ python.\nLook into /data/BetterTerminal"'},
+        "cc":{'test' : {'linux':'printf "Hello.\nThis is a custom command made using the magic of python."',
+                        'windows':'echo Hello. This is a custom command made using the magic of python.'}
+              },
         "os":{
             'windows':'{path}>',
             'linux':'{user}@{system}:{path} $ '
