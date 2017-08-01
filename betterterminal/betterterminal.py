@@ -5,7 +5,7 @@ from subprocess import Popen, CalledProcessError, PIPE, STDOUT
 from os.path import expanduser, exists
 from os import makedirs, getcwd, chdir, listdir
 from getpass import getuser
-from platform import uname
+from platform import uname, python_version
 from re import sub
 
 class BetterTerminal:
@@ -18,7 +18,7 @@ class BetterTerminal:
         self.cc = self.settings['cc']
         self.os = self.settings['os']
         self.enabled = self.settings['enabled']
-        self.sessions = []
+        self.sessions = {}
 
     @commands.command(pass_context=True)
     @checks.is_owner()
@@ -41,11 +41,16 @@ class BetterTerminal:
         self.cc = self.settings['cc']
         self.os = self.settings['os']
 
-        self.sessions.append(ctx.message.channel.id)
+        self.sessions.update({ctx.message.channel.id:ctx.message.author.id})
         await self.bot.say('Enter commands after {} to execute them. `exit()` to exit.'.format(self.prefix.replace("`", "\\`")))
 
+    @commands.group(pass_context=True, hidden=True)
+    @checks.is_owner()
+    async def system(self, ctx):
+        await self.bot.say('{} is running on {} {} using {}'.format(ctx.message.server.me.display_name ,uname()[0], uname()[2   ], python_version()))
 
     @commands.group(pass_context=True)
+    @checks.is_owner()
     async def cmdsettings(self, ctx):
         """Settings for Terminal"""
         if ctx.invoked_subcommand is None:
@@ -59,14 +64,9 @@ class BetterTerminal:
         """Set the prefix for the Terminal"""
 
         if prefix is None:
-            if ctx.invoked_subcommand:
-                pages = self.bot.formatter.format_help_for(ctx, ctx.invoked_subcommand)
-                for page in pages:
-                    await self.bot.send_message(ctx.message.channel, page)
-            else:
-                pages = self.bot.formatter.format_help_for(ctx, ctx.command)
-                for page in pages:
-                    await self.bot.send_message(ctx.message.channel, page)
+            pages = self.bot.formatter.format_help_for(ctx, ctx.command)
+            for page in pages:
+                await self.bot.send_message(ctx.message.channel, page)
             await self.bot.say('```\nCurrent prefix: {} ```\n'.format(self.prefix))
             return
 
@@ -97,6 +97,11 @@ class BetterTerminal:
                 if not command: # if you have entered nothing it will just ignore
                     return
 
+                if command in self.cc:
+                    if self.cc[command][uname()[0].lower()]:
+                        command = self.cc[command][uname()[0].lower()]
+                    else:
+                        command = self.cc[command]['linux']
 
                 if command == 'exit()':  # commands used for quiting cmd, same as for repl
                     await self.bot.send_message(message.channel, 'Exiting.')
@@ -105,12 +110,6 @@ class BetterTerminal:
 
                 if command.lower().find("apt-get install") != -1 and command.lower().find("-y") == -1:
                     command = "{} -y".format(command) # forces apt-get to not ask for a prompt
-
-                if command in self.cc:
-                    if self.cc[command][uname()[0].lower()]:
-                        command = self.cc[command][uname()[0].lower()]
-                    else:
-                        command = self.cc[command]['linux']
 
                 if command.startswith('cd ') and command.split('cd ')[1]:
                     path = command.split('cd ')[1]
