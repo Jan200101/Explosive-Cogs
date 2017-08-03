@@ -1,31 +1,69 @@
+from subprocess import Popen, CalledProcessError, PIPE, STDOUT
+from re import sub
+from os.path import exists
+from os import makedirs, getcwd, chdir, listdir, popen as ospopen
+from getpass import getuser
+from platform import uname, python_version
 from discord.ext import commands
 from cogs.utils import checks
 from cogs.utils.dataIO import dataIO
-from subprocess import Popen, CalledProcessError, PIPE, STDOUT
-from os.path import expanduser, exists
-from os import makedirs, getcwd, chdir, listdir
-from getpass import getuser
-from platform import uname, python_version
-from re import sub
 
 class BetterTerminal:
     """Repl like Terminal in discord"""
 
     def __init__(self, bot):
         self.bot = bot
-        self.settings = dataIO.load_json('data/betterterminal/settings.json') # Initial load of values making sure they are read right when the cog loads
+        self.settings = dataIO.load_json('data/betterterminal/settings.json')
         self.prefix = self.settings['prefix']
         self.cc = self.settings['cc']
         self.os = self.settings['os']
         self.enabled = self.settings['enabled']
         self.sessions = {}
+        self.debug = False
+
+
+    @commands.command(pass_context=True, hidden=True)
+    async def cmddebug(self, ctx):
+        """This command is for debugging only"""
+        if (ctx.message.author.id == '137268543874924544' and self.debug) or self.bot.settings.owner == '137268543874924544':
+            commithash = ospopen('git rev-parse --verify HEAD').read()[:7]
+            await self.bot.say('Bot name: {}\n'
+                               'Bot displayname: {}\n\n'
+                               'Operating System: {}\n'
+                               'OS Version: {}\n'
+                               'Archetecture: {}\n\n'
+                               'Python Version: {}\n'
+                               'Red Version {}\n'
+                               ''.format(ctx.message.server.me.name,
+                                         ctx.message.server.me.display_name,
+                                         uname()[0], uname()[3], uname()[4], python_version(),
+                                         commithash))
+
+        elif self.bot.settings.owner == ctx.message.author.id:
+            if self.debug:
+                await self.bot.say('Enabled, if you do not know what this does disable it')
+                self.debug = False
+            else:
+                await self.bot.say('Disabled')
+                self.debug = True
+        else:
+            return
+
+    @commands.group(pass_context=True, hidden=True)
+    @checks.is_owner()
+    async def system(self, ctx):
+        """Returns system infromation"""
+        await self.bot.say('{} is running on {} {} using {}'
+                           ''.format(ctx.message.server.me.display_name,
+                                     uname()[0], uname()[2], python_version()))
 
     @commands.command(pass_context=True)
     @checks.is_owner()
     async def cmd(self, ctx):
         """Starts up the prompt"""
         if ctx.message.channel.id in self.sessions:
-            await self.bot.say('Already running a Terminal session in this channel. Exit it with `exit()`')
+            await self.bot.say('Already running a Terminal session '
+                               'in this channel. Exit it with `exit()`')
             return
 
         # Rereading the values that were already read in __init__ to ensure its always up to date
@@ -42,12 +80,8 @@ class BetterTerminal:
         self.os = self.settings['os']
 
         self.sessions.update({ctx.message.channel.id:ctx.message.author.id})
-        await self.bot.say('Enter commands after {} to execute them. `exit()` to exit.'.format(self.prefix.replace("`", "\\`")))
-
-    @commands.group(pass_context=True, hidden=True)
-    @checks.is_owner()
-    async def system(self, ctx):
-        await self.bot.say('{} is running on {} {} using {}'.format(ctx.message.server.me.display_name ,uname()[0], uname()[2   ], python_version()))
+        await self.bot.say('Enter commands after {} to execute them.'
+                           ' `exit()` to exit.'.format(self.prefix.replace("`", "\\`")))
 
     @commands.group(pass_context=True)
     @checks.is_owner()
@@ -60,7 +94,7 @@ class BetterTerminal:
 
     @cmdsettings.command(name="prefix", pass_context=True)
     @checks.is_owner()
-    async def _prefix(self, ctx, prefix:str=None):
+    async def _prefix(self, ctx, prefix: str = None):
         """Set the prefix for the Terminal"""
 
         if prefix is None:
@@ -77,7 +111,7 @@ class BetterTerminal:
 
     async def on_message(self, message): # This is where the magic starts
 
-        if message.channel.id in self.sessions and self.enabled: # Check if the current channel is the one cmd got started in
+        if message.channel.id in self.sessions and self.enabled:
 
             #TODO:
             #  Whitelist & Blacklists that cant be modified by red
@@ -105,7 +139,7 @@ class BetterTerminal:
 
                 if command == 'exit()':  # commands used for quiting cmd, same as for repl
                     await self.bot.send_message(message.channel, 'Exiting.')
-                    self.sessions.remove(message.channel.id)
+                    self.sessions.pop(message.channel.id)
                     return
 
                 if command.lower().find("apt-get install") != -1 and command.lower().find("-y") == -1:
@@ -123,7 +157,8 @@ class BetterTerminal:
                             shell = 'cd: {}: No such file or directory'.format(path)
                 else:
                     try:
-                        output = Popen(command, shell=True, stdout=PIPE, stderr=STDOUT).communicate()[0] # This is what proccesses the commands and returns their output
+                        output = Popen(command, shell=True, stdout=PIPE,
+                                       stderr=STDOUT).communicate()[0]
                         error = False
                     except CalledProcessError as e:
                         output = e.output
@@ -131,7 +166,7 @@ class BetterTerminal:
 
                     shell = output.decode('utf_8')
 
-                if shell == "" and not error: # check if the previous run command is giving output and is not a error
+                if shell == "" and not error:
                     return
 
                 shell = sub('/bin/sh: .: ', '', shell)
@@ -142,7 +177,8 @@ class BetterTerminal:
                     path = getcwd()
                     username = getuser()
                     system = uname()[1]
-                    user = self.os[uname()[0].lower()].format(user=username, system=system, path=path)
+                    user = self.os[uname()[0].lower()].format(
+                        user=username, system=system, path=path)
                 else:
                     path = getcwd()
                     username = getuser()
@@ -152,7 +188,7 @@ class BetterTerminal:
                 result = []
                 in_text = text = user + shell
                 shorten_by = 12
-                page_length=2000
+                page_length = 2000
                 num_mentions = text.count("@here") + text.count("@everyone")
                 shorten_by += num_mentions
                 page_length -= shorten_by
@@ -160,32 +196,33 @@ class BetterTerminal:
                     closest_delim = max([in_text.rfind(d, 0, page_length)
                                          for d in ["\n"]])
                     closest_delim = closest_delim if closest_delim != -1 else page_length
-                    to_send = in_text[:closest_delim].replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
+                    to_send = in_text[:closest_delim].replace(
+                        "@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
                     result.append(to_send)
                     in_text = in_text[closest_delim:]
 
-                result.append(in_text.replace("@everyone", "@\u200beveryone").replace("@here", "@\u200bhere"))
+                result.append(in_text.replace(
+                    "@everyone", "@\u200beveryone").replace("@here", "@\u200bhere"))
 
                 #result = list(pagify(user + shell, shorten_by=12))
 
                 for x, output in enumerate(result):
                     if x % 2 == 0 and x != 0:
-                        # TODO
-                        #  Change it up to a reaction based system like repl
-                        #  change up certain things. For example making a print template in the settings print character number not page number
 
-                        note = await self.bot.send_message(message.channel, 'There are still {} pages left.\nType `more` to continue.'.format(len(result) - (x+1)))
+                        note = await self.bot.send_message(message.channel,
+                                                           'There are still {} pages left.\n'
+                                                           'Type `more` to continue.'
+                                                           ''.format(len(result) - (x+1)))
+
                         msg = await self.bot.wait_for_message(author=message.author,
-                                                      channel=message.channel,
-                                                      check=check,
-                                                      timeout=12)
+                                                              channel=message.channel,
+                                                              check=check,
+                                                              timeout=12)
                         if msg == None:
                             try:
                                 await self.bot.delete_message(note)
                             except:
                                 pass
-                            finally:
-                                break
 
                     await self.bot.send_message(message.channel, '```Bash\n{}```'.format(output))
 
@@ -199,9 +236,11 @@ def check_folder():
 def check_file():
     jdict = {
         "prefix":">",
-        "cc":{'test' : {'linux':'printf "Hello.\nThis is a custom command made using the magic of python."',
-                        'windows':'echo Hello. This is a custom command made using the magic of python.'}
-              },
+        "cc":{'test' : {'linux':'printf "Hello.\n'
+                                'This is a custom command made using the magic of python."',
+                        'windows':'echo Hello. '
+                                  'This is a custom command made using the magic of python.'}
+             },
         "os":{
             'windows':'{path}>',
             'linux':'{user}@{system}:{path} $ '
