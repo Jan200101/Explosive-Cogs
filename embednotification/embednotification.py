@@ -64,7 +64,6 @@ class EmbedNotification:
 
         color = ''.join([choice('0123456789ABCDEF') for x in range(5)])
         color = int(color, 16)
-        await ctx.invoke(self.embednotification, text=text, color=str(color), ignore_deletion=True)
 
         try:
             await self.bot.delete_message(ctx.message)
