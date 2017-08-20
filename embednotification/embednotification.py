@@ -66,12 +66,6 @@ class EmbedNotification:
             try:
                 await self.bot.delete_message(ctx.message)
             except:
-                await self.bot.send_message(ctx.message.author,
-                                            'I need the `Manage Messages` permission on `{}`'
-                                            'to delete your message before it gets embeded.\n'
-                                            'This is done to ensure the bots embed is in'
-                                            'the same position your command was in.'
-                                            ''.format(ctx.message.channel.mention))
                 return
         else:
             try:
