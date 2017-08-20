@@ -29,12 +29,12 @@ class EmbedNotification:
             try:
                 await self.bot.delete_message(ctx.message)
             except:
-                await self.bot.send_message(ctx.message.server.get_member(self.bot.settings.owner),
+                await self.bot.send_message(ctx.message.channel,
                                             'Your selfbot/This userbot is '
                                             'able to be used by others.\n'
                                             'This is breaking Discords TOS and'
                                             ' can be punished by them.\n'
-                                            'This messagte was send my embednotification.py')
+                                            'This messagte was send by embednotification.py')
 
                 return
             
