@@ -37,10 +37,11 @@ class EmbedNotification:
                                             'This messagte was send my embednotification.py')
 
                 return
-
-        color = color[:6]
-        color = color.replace("#", "")
-        color = color.replace("0x", "")
+            
+        if not color.replace("#", "").replace("0x", "").isdigit():
+            color = '000000'
+            
+        color = color.replace("#", "").replace("0x", "")[:6]
         color = int(color, 16)
 
         normaltext = u"\u2063" * randint(1, 10) # Generating a random number for a empty embed
@@ -62,9 +63,6 @@ class EmbedNotification:
         This Version has all features from embedsayadmin for normal and selfbots
         and it does not face the same restrictions as embednotifications."""
 
-        color = ''.join([choice('0123456789ABCDEF') for x in range(5)])
-        color = int(color, 16)
-
         try:
             await self.bot.delete_message(ctx.message)
         except:
@@ -76,7 +74,7 @@ class EmbedNotification:
 
         normaltext = u"\u2063" * randint(1, 10) # Generating a random number for a empty embed
 
-        data = discord.Embed(description=str(text), colour=discord.Colour(value=color))
+        data = discord.Embed(description=str(text), colour=discord.Colour(value=int(''.join([choice('0123456789ABCDEF') for x in range(5)]), 16)))
 
         try:
             await self.bot.say(normaltext, embed=data)
