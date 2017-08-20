@@ -62,15 +62,29 @@ class EmbedNotification:
         """The good old embedsay from Sentry-Cogs brought into embednotification.
         This Version has all features from embedsayadmin for normal and selfbots
         and it does not face the same restrictions as embednotifications."""
+        if ctx.message.server.me.bot:
+            try:
+                await self.bot.delete_message(ctx.message)
+            except:
+                await self.bot.send_message(ctx.message.author,
+                                            'I need the `Manage Messages` permission on `{}`'
+                                            'to delete your message before it gets embeded.\n'
+                                            'This is done to ensure the bots embed is in'
+                                            'the same position your command was in.'
+                                            ''.format(ctx.message.channel.mention))
+                return
+        else:
+            try:
+                await self.bot.delete_message(ctx.message)
+            except:
+                await self.bot.send_message(ctx.message.channel,
+                                            'Your selfbot/This userbot is '
+                                            'able to be used by others.\n'
+                                            'This is breaking Discords TOS and'
+                                            ' can be punished by them.\n'
+                                            'This messagte was send by embednotification.py')
 
-        try:
-            await self.bot.delete_message(ctx.message)
-        except:
-            await self.bot.send_message(ctx.message.server.get_member(self.bot.settings.owner),
-                                        'Your selfbot/This userbot is able to be used by others.\n'
-                                        'This is breaking Discords TOS and can be punished by them.'
-                                        '\nThis messagte was send my embednotification.py')
-            return
+                return
 
         normaltext = u"\u2063" * randint(1, 10) # Generating a random number for a empty embed
 
