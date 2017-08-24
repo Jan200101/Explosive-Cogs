@@ -207,7 +207,7 @@ class BetterTerminal:
                 #result = list(pagify(user + shell, shorten_by=12))
 
                 for x, output in enumerate(result):
-                    if x % 2 == 0 and x != 0:
+                    if x % 1 == 0 and x != 0:
 
                         note = await self.bot.send_message(message.channel,
                                                            'There are still {} pages left.\n'
