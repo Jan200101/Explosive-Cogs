@@ -29,18 +29,19 @@ class EmbedNotification:
             try:
                 await self.bot.delete_message(ctx.message)
             except:
-                await self.bot.send_message(ctx.message.server.get_member(self.bot.settings.owner),
+                await self.bot.send_message(ctx.message.channel,
                                             'Your selfbot/This userbot is '
                                             'able to be used by others.\n'
                                             'This is breaking Discords TOS and'
                                             ' can be punished by them.\n'
-                                            'This messagte was send my embednotification.py')
+                                            'This messagte was send by embednotification.py')
 
                 return
-
-        color = color[:6]
-        color = color.replace("#", "")
-        color = color.replace("0x", "")
+            
+        if not color.replace("#", "").replace("0x", "").isdigit():
+            color = '000000'
+            
+        color = color.replace("#", "").replace("0x", "")[:6]
         color = int(color, 16)
 
         normaltext = u"\u2063" * randint(1, 10) # Generating a random number for a empty embed
@@ -61,22 +62,27 @@ class EmbedNotification:
         """The good old embedsay from Sentry-Cogs brought into embednotification.
         This Version has all features from embedsayadmin for normal and selfbots
         and it does not face the same restrictions as embednotifications."""
+        if ctx.message.server.me.bot:
+            try:
+                await self.bot.delete_message(ctx.message)
+            except:
+                return
+        else:
+            try:
+                await self.bot.delete_message(ctx.message)
+            except:
+                await self.bot.send_message(ctx.message.channel,
+                                            'Your selfbot/This userbot is '
+                                            'able to be used by others.\n'
+                                            'This is breaking Discords TOS and'
+                                            ' can be punished by them.\n'
+                                            'This messagte was send by embednotification.py')
 
-        color = ''.join([choice('0123456789ABCDEF') for x in range(5)])
-        color = int(color, 16)
-
-        try:
-            await self.bot.delete_message(ctx.message)
-        except:
-            await self.bot.send_message(ctx.message.server.get_member(self.bot.settings.owner),
-                                        'Your selfbot/This userbot is able to be used by others.\n'
-                                        'This is breaking Discords TOS and can be punished by them.'
-                                        '\nThis messagte was send my embednotification.py')
-            return
+                return
 
         normaltext = u"\u2063" * randint(1, 10) # Generating a random number for a empty embed
 
-        data = discord.Embed(description=str(text), colour=discord.Colour(value=color))
+        data = discord.Embed(description=str(text), colour=discord.Colour(value=int(''.join([choice('0123456789ABCDEF') for x in range(5)]), 16)))
 
         try:
             await self.bot.say(normaltext, embed=data)
