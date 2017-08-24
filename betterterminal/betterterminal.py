@@ -214,7 +214,7 @@ class BetterTerminal:
                                                            'Type `more` to continue.'
                                                            ''.format(len(result) - (x+1)))
 
-                        msg = await self.bot.wait_for_message(author=message.author,
+                        msg = await self.bot.wait_for_message(author=message.server.get_member(self.bot.settings.owner),
                                                               channel=message.channel,
                                                               check=check,
                                                               timeout=12)
