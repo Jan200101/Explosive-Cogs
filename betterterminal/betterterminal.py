@@ -217,14 +217,15 @@ class BetterTerminal:
                         msg = await self.bot.wait_for_message(author=message.server.get_member(self.bot.settings.owner),
                                                               channel=message.channel,
                                                               check=check,
-                                                              timeout=12)
-                        if msg == None:
+                                                              timeout=10)
+                        if msg != 'more':
                             try:
                                 await self.bot.delete_message(note)
                             except:
                                 pass
-
-                    await self.bot.send_message(message.channel, '```Bash\n{}```'.format(output))
+                            return
+                    if output:
+                        await self.bot.send_message(message.channel, '```Bash\n{}```'.format(output))
 
 
 
