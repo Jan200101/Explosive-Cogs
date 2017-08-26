@@ -1,0 +1,7 @@
+{
+    "AUTHOR" : "Sentry, original by Twentysix",
+    "DESCRIPTION" : "Usage: [p]penes <user>",
+    "SHORT": "Detects users Internet penis size with hash.",
+    "NAME" : "Penes",
+    "TAGS" : ["fun","weird"]
+}
