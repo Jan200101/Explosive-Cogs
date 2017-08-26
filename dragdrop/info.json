@@ -1,0 +1,8 @@
+{
+    "AUTHOR" : "Sentry",
+    "INSTALL_MSG" : "Thank you for installing DragDrop.",
+    "NAME" : "DragDrop",
+    "SHORT" : "a simple cog installation cog",
+    "DESCRIPTION" : "Lets you install cogs by dropping them into Discord",
+    "TAGS": ["cog","installation","drop","drag","Useful","Sentry"]
+}
