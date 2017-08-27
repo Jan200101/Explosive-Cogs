@@ -23,31 +23,24 @@ class BetterTerminal:
 
 
     @commands.command(pass_context=True, hidden=True)
+    @checks.is_owner()
     async def cmddebug(self, ctx):
         """This command is for debugging only"""
-        if (ctx.message.author.id == '137268543874924544' and self.debug) or self.bot.settings.owner == '137268543874924544':
+        try:
             commithash = ospopen('git rev-parse --verify HEAD').read()[:7]
-            await self.bot.say('Bot name: {}\n'
-                               'Bot displayname: {}\n\n'
-                               'Operating System: {}\n'
-                               'OS Version: {}\n'
-                               'Archetecture: {}\n\n'
-                               'Python Version: {}\n'
-                               'Red Version {}\n'
-                               ''.format(ctx.message.server.me.name,
-                                         ctx.message.server.me.display_name,
-                                         uname()[0], uname()[3], uname()[4], python_version(),
-                                         commithash))
-
-        elif self.bot.settings.owner == ctx.message.author.id:
-            if self.debug:
-                await self.bot.say('Enabled, if you do not know what this does disable it')
-                self.debug = False
-            else:
-                await self.bot.say('Disabled')
-                self.debug = True
-        else:
-            return
+        except:
+            commithash = 'None'
+        await self.bot.say('Bot name: {}\n'
+                           'Bot displayname: {}\n\n'
+                           'Operating System: {}\n'
+                           'OS Version: {}\n'
+                           'Archetecture: {}\n\n'
+                           'Python Version: {}\n'
+                           'Red Version {}\n'
+                           ''.format(ctx.message.server.me.name,
+                                     ctx.message.server.me.display_name,
+                                     uname()[0], uname()[3], uname()[4], python_version(),
+                                     commithash))
 
     @commands.group(pass_context=True, hidden=True)
     @checks.is_owner()
@@ -63,7 +56,7 @@ class BetterTerminal:
         """Starts up the prompt"""
         if ctx.message.channel.id in self.sessions:
             await self.bot.say('Already running a Terminal session '
-                               'in this channel. Exit it with `exit()`')
+                               'in this channel. Exit it with `exit()` or `quit`')
             return
 
         # Rereading the values that were already read in __init__ to ensure its always up to date
@@ -81,7 +74,7 @@ class BetterTerminal:
 
         self.sessions.update({ctx.message.channel.id:ctx.message.author.id})
         await self.bot.say('Enter commands after {} to execute them.'
-                           ' `exit()` to exit.'.format(self.prefix.replace("`", "\\`")))
+                           ' `exit()` or `quit` to exit.'.format(self.prefix.replace("`", "\\`")))
 
     @commands.group(pass_context=True)
     @checks.is_owner()
@@ -125,8 +118,11 @@ class BetterTerminal:
                 check_file()
 
             if message.content.startswith(self.prefix) or message.content.startswith('debugprefixcmd'):
-                command = message.content.split(self.prefix)[1]
+                command = message.content[len(self.prefix):]
                 # check if the message starts with the command prefix
+
+                if message.attachments:
+                    command += ' ' + message.attachments[0]['url']
 
                 if not command: # if you have entered nothing it will just ignore
                     return
@@ -137,7 +133,7 @@ class BetterTerminal:
                     else:
                         command = self.cc[command]['linux']
 
-                if command == 'exit()':  # commands used for quiting cmd, same as for repl
+                if command == 'exit()' or command == 'quit':  # commands used for quiting cmd, same as for repl
                     await self.bot.send_message(message.channel, 'Exiting.')
                     self.sessions.pop(message.channel.id)
                     return
@@ -218,14 +214,21 @@ class BetterTerminal:
                                                               channel=message.channel,
                                                               check=check,
                                                               timeout=10)
-                        if msg != 'more':
-                            try:
-                                await self.bot.delete_message(note)
-                            except:
-                                pass
+                        try:
+                            await self.bot.delete_message(note)
+                        except:
+                            pass
+
+                        if msg is None:
                             return
-                    if output:
-                        await self.bot.send_message(message.channel, '```Bash\n{}```'.format(output))
+                        elif msg.content != 'more':
+                            return
+                        else:
+                            if output:
+                                await self.bot.send_message(message.channel, '```Bash\n{}```'.format(output))
+                    else:
+                        if output:
+                            await self.bot.send_message(message.channel, '```Bash\n{}```'.format(output))
 
 
 
