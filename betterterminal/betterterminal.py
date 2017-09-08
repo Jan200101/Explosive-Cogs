@@ -8,6 +8,8 @@ from discord.ext import commands
 from cogs.utils import checks
 from cogs.utils.dataIO import dataIO
 
+__author__ = 'Sentry#4141'
+
 class BetterTerminal:
     """Repl like Terminal in discord"""
 
@@ -17,9 +19,9 @@ class BetterTerminal:
         self.prefix = self.settings['prefix']
         self.cc = self.settings['cc']
         self.os = self.settings['os']
+        self.cos = self.settings['cos']
         self.enabled = self.settings['enabled']
         self.sessions = {}
-        self.debug = False
 
 
     @commands.command(pass_context=True, hidden=True)
@@ -30,17 +32,46 @@ class BetterTerminal:
             commithash = ospopen('git rev-parse --verify HEAD').read()[:7]
         except:
             commithash = 'None'
-        await self.bot.say('Bot name: {}\n'
-                           'Bot displayname: {}\n\n'
-                           'Operating System: {}\n'
-                           'OS Version: {}\n'
-                           'Archetecture: {}\n\n'
-                           'Python Version: {}\n'
-                           'Red Version {}\n'
-                           ''.format(ctx.message.server.me.name,
-                                     ctx.message.server.me.display_name,
-                                     uname()[0], uname()[3], uname()[4], python_version(),
-                                     commithash))
+
+        text = str('```'
+                   'Bot Information\n\n'
+                   'Bot name:           {}\n'
+                   'Bot displayname:    {}\n\n'
+                   'Operating System:   {}\n'
+                   'OS Version:         {}\n'
+                   'Archetecture:       {}\n\n'
+                   'Python Version:     {}\n'
+                   'Commit              {}\n'
+                   '```'.format(ctx.message.server.me.name,
+                                ctx.message.server.me.display_name,
+                                uname()[0], uname()[3], uname()[4],
+                                python_version(), commithash)
+                  )
+
+
+
+
+        result = []
+        in_text = text
+        shorten_by = 12
+        page_length = 2000
+        num_mentions = text.count("@here") + text.count("@everyone")
+        shorten_by += num_mentions
+        page_length -= shorten_by
+        while len(in_text) > page_length:
+            closest_delim = max([in_text.rfind(d, 0, page_length)
+                                 for d in ["\n"]])
+            closest_delim = closest_delim if closest_delim != -1 else page_length
+            to_send = in_text[:closest_delim].replace(
+                "@everyone", "@\u200beveryone").replace("@here", "@\u200bhere")
+            result.append(to_send)
+            in_text = in_text[closest_delim:]
+
+        result.append(in_text.replace(
+            "@everyone", "@\u200beveryone").replace("@here", "@\u200bhere"))
+
+        for page in result:
+            await self.bot.say(page)
 
     @commands.group(pass_context=True, hidden=True)
     @checks.is_owner()
@@ -79,11 +110,53 @@ class BetterTerminal:
     @commands.group(pass_context=True)
     @checks.is_owner()
     async def cmdsettings(self, ctx):
-        """Settings for Terminal"""
+        """Settings for BetterTerminal"""
         if ctx.invoked_subcommand is None:
             pages = self.bot.formatter.format_help_for(ctx, ctx.command)
             for page in pages:
                 await self.bot.send_message(ctx.message.channel, page)
+
+    @cmdsettings.group(name="customcom", pass_context=True)
+    @checks.is_owner()
+    async def _cc(self, ctx):
+        """Custom commands for BetterTerminal"""
+        await self.bot.say('This feature is WIP')
+        """
+        if ctx.invoked_subcommand is None:
+            pages = self.bot.formatter.format_help_for(ctx, ctx.command)
+            for page in pages:
+                await self.bot.send_message(ctx.message.channel, page)
+                """
+
+    @cmdsettings.command(name="os", pass_context=True)
+    @checks.is_owner()
+    async def _os(self, ctx, os: str = None):
+        """Set the prompt type of BetterTerminal to emulate another Operatingsystem.
+        these 'emulations' arent 100% accurate on other Operatingsystems"""
+
+        if os is None:
+            pages = self.bot.formatter.format_help_for(ctx, ctx.command)
+            for page in pages:
+                await self.bot.send_message(ctx.message.channel, page)
+            if self.cos == 'default':
+                await self.bot.say('```\nCurrent prompt type: {}[{}] ```\n'.format(self.cos, uname()[0].lower()))
+            else:
+                await self.bot.say('```\nCurrent prompt type: {} ```\n'.format(self.cos))
+            return
+
+        if not os.lower() in self.os:
+            await self.bot.say('Invalid prompt type.\nThe following once are valid:\n\n{}'.format(", ".join(self.os)))
+            return
+
+        os = os.lower()
+
+        if os == 'default':
+            os = uname()[0].lower()
+
+        self.cos = os
+        self.settings['cos'] = os
+        dataIO.save_json('data/betterterminal/settings.json', self.settings)
+        await self.bot.say('Changed prompt type to {} '.format(self.cos.replace("`", "\\`")))
 
     @cmdsettings.command(name="prefix", pass_context=True)
     @checks.is_owner()
@@ -98,7 +171,7 @@ class BetterTerminal:
             return
 
         self.prefix = prefix
-        self.settings['prefix'] = self.prefix
+        self.settings['prefix'] = prefix
         dataIO.save_json('data/betterterminal/settings.json', self.settings)
         await self.bot.say('Changed prefix to {} '.format(self.prefix.replace("`", "\\`")))
 
@@ -107,18 +180,23 @@ class BetterTerminal:
         if message.channel.id in self.sessions and self.enabled and message.author.id == self.bot.settings.owner: # I REPEAT DO NOT DELETE
 
             #TODO:
-            #  Whitelist & Blacklists that cant be modified by red
+            #  Whitelist & Blacklists that cant be modified by the bot
 
-            def check(m):
-                if m.content.strip().lower() == "more":
-                    return True
-
-            if not self.prefix: # Making little 1337 Hax0rs not fuck this command up
+            if not dataIO.is_valid_json("data/betterterminal/settings.json"):
                 check_folder()
                 check_file()
+                self.settings = dataIO.load_json('data/betterterminal/settings.json')
+                self.prefix = self.settings['prefix']
+                self.cc = self.settings['cc']
+                self.os = self.settings['os']
+                self.cos = self.settings['cos']
+                self.enabled = self.settings['enabled']
 
             if message.content.startswith(self.prefix) or message.content.startswith('debugprefixcmd'):
-                command = message.content[len(self.prefix):]
+                if message.content.startswith(self.prefix):
+                    command = message.content[len(self.prefix):]
+                else:
+                    command = message.content[len('debugprefixcmd'):]
                 # check if the message starts with the command prefix
 
                 if message.attachments:
@@ -137,7 +215,8 @@ class BetterTerminal:
                     await self.bot.send_message(message.channel, 'Exiting.')
                     self.sessions.pop(message.channel.id)
                     return
-
+                elif commands == 'exit':
+                    await self.bot.send_message(message.channel, "")
                 if command.lower().find("apt-get install") != -1 and command.lower().find("-y") == -1:
                     command = "{} -y".format(command) # forces apt-get to not ask for a prompt
 
@@ -156,8 +235,8 @@ class BetterTerminal:
                         output = Popen(command, shell=True, stdout=PIPE,
                                        stderr=STDOUT).communicate()[0]
                         error = False
-                    except CalledProcessError as e:
-                        output = e.output
+                    except CalledProcessError as err:
+                        output = err.output
                         error = True
 
                     shell = output.decode('utf_8')
@@ -169,11 +248,16 @@ class BetterTerminal:
                 if "\n" in shell[:-2]:
                     shell = '\n' + shell
 
-                if uname()[0].lower() in self.os:
+                if self.cos == 'default':
+                    cos = uname()[0].lower()
+                else:
+                    cos = self.cos
+
+                if cos in self.os:
                     path = getcwd()
                     username = getuser()
                     system = uname()[1]
-                    user = self.os[uname()[0].lower()].format(
+                    user = self.os[cos].format(
                         user=username, system=system, path=path)
                 else:
                     path = getcwd()
@@ -202,17 +286,18 @@ class BetterTerminal:
 
                 #result = list(pagify(user + shell, shorten_by=12))
 
-                for x, output in enumerate(result):
-                    if x % 1 == 0 and x != 0:
+                for num, output in enumerate(result):
+                    if num % 1 == 0 and num != 0:
 
                         note = await self.bot.send_message(message.channel,
                                                            'There are still {} pages left.\n'
                                                            'Type `more` to continue.'
-                                                           ''.format(len(result) - (x+1)))
+                                                           ''.format(len(result) - (num+1)))
 
-                        msg = await self.bot.wait_for_message(author=message.server.get_member(self.bot.settings.owner),
-                                                              channel=message.channel,
-                                                              check=check,
+                        msg = await self.bot.wait_for_message(check=lambda m:
+                                                              m.channel == message.channel and
+                                                              m.author == message.author and
+                                                              m.content == 'more',
                                                               timeout=10)
                         try:
                             await self.bot.delete_message(note)
@@ -221,14 +306,14 @@ class BetterTerminal:
 
                         if msg is None:
                             return
-                        elif msg.content != 'more':
-                            return
                         else:
                             if output:
-                                await self.bot.send_message(message.channel, '```Bash\n{}```'.format(output))
+                                await self.bot.send_message(message.channel,
+                                                            '```Bash\n{}```'.format(output))
                     else:
                         if output:
-                            await self.bot.send_message(message.channel, '```Bash\n{}```'.format(output))
+                            await self.bot.send_message(message.channel,
+                                                        '```Bash\n{}```'.format(output))
 
 
 
@@ -249,6 +334,7 @@ def check_file():
             'windows':'{path}>',
             'linux':'{user}@{system}:{path} $ '
             },
+        "cos":"default",
         "enabled":True
         }
 
