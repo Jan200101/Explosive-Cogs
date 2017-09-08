@@ -5,6 +5,7 @@ from .utils.checks import is_owner
 from discord.ext import commands
 
 __author__ = 'Sentry#4141'
+
 class MissingCog(Exception):
     pass
 
@@ -27,7 +28,7 @@ class DragDrop:
                                                   timeout=15)
         else:
             msg = ctx.message
-            
+
         if msg is None:
             await self.bot.say('No cog recieved')
         elif msg.attachments[0]['filename'].endswith('.py'):
