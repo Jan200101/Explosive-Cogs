@@ -39,7 +39,7 @@ class BetterTerminal:
                    'Bot displayname:    {}\n\n'
                    'Operating System:   {}\n'
                    'OS Version:         {}\n'
-                   'Archetecture:       {}\n\n'
+                   'Architecture:       {}\n\n'
                    'Python Version:     {}\n'
                    'Commit              {}\n'
                    '```'.format(ctx.message.server.me.name,
@@ -47,9 +47,6 @@ class BetterTerminal:
                                 uname()[0], uname()[3], uname()[4],
                                 python_version(), commithash)
                   )
-
-
-
 
         result = []
         in_text = text
@@ -144,14 +141,11 @@ class BetterTerminal:
                 await self.bot.say('```\nCurrent prompt type: {} ```\n'.format(self.cos))
             return
 
-        if not os.lower() in self.os:
+        if not os.lower() in self.os and os != 'default':
             await self.bot.say('Invalid prompt type.\nThe following once are valid:\n\n{}'.format(", ".join(self.os)))
             return
 
         os = os.lower()
-
-        if os == 'default':
-            os = uname()[0].lower()
 
         self.cos = os
         self.settings['cos'] = os
