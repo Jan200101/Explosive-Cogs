@@ -1,6 +1,7 @@
 from subprocess import Popen, CalledProcessError, PIPE, STDOUT
 from re import sub
-from os.path import exists
+from sys import argv
+from os.path import exists, abspath, dirname
 from os import makedirs, getcwd, chdir, listdir, popen as ospopen
 from getpass import getuser
 from platform import uname, python_version
@@ -15,7 +16,7 @@ class BetterTerminal:
 
     def __init__(self, bot):
         self.bot = bot
-        self.settings = dataIO.load_json('data/betterterminal/settings.json')
+        self.settings = dataIO.load_json(abspath(dirname(argv[0])) + '/data/betterterminal/settings.json')
         self.prefix = self.settings['prefix']
         self.cc = self.settings['cc']
         self.os = self.settings['os']
@@ -30,13 +31,15 @@ class BetterTerminal:
         """This command is for debugging only"""
         try:
             commithash = ospopen('git rev-parse --verify HEAD').read()[:7]
-        except:
-            commithash = 'None'
+        finally:
+            if not commithash:
+                commithash = 'None'
 
         text = str('```'
                    'Bot Information\n\n'
                    'Bot name:           {}\n'
-                   'Bot displayname:    {}\n\n'
+                   'Bot displayname:    {}\n'
+                   'Bot directory        {}\n\n'
                    'Operating System:   {}\n'
                    'OS Version:         {}\n'
                    'Architecture:       {}\n\n'
@@ -44,9 +47,9 @@ class BetterTerminal:
                    'Commit              {}\n'
                    '```'.format(ctx.message.server.me.name,
                                 ctx.message.server.me.display_name,
-                                uname()[0], uname()[3], uname()[4],
-                                python_version(), commithash)
-                  )
+                                abspath(dirname(argv[0])), uname()[0],
+                                uname()[3], uname()[4], python_version(),
+                                commithash))
 
         result = []
         in_text = text
@@ -89,18 +92,18 @@ class BetterTerminal:
 
         # Rereading the values that were already read in __init__ to ensure its always up to date
         try:
-            self.settings = dataIO.load_json('data/betterterminal/settings.json')
+            self.settings = dataIO.load_json(abspath(dirname(argv[0])) + '/data/betterterminal/settings.json')
         except:
             # Pretend its the worst case and reset the settings
             check_folder()
             check_file()
-            self.settings = dataIO.load_json('data/betterterminal/settings.json')
+            self.settings = dataIO.load_json(abspath(dirname(argv[0])) + '/data/betterterminal/settings.json')
 
         self.prefix = self.settings['prefix']
         self.cc = self.settings['cc']
         self.os = self.settings['os']
 
-        self.sessions.update({ctx.message.channel.id:ctx.message.author.id})
+        self.sessions.update({ctx.message.channel.id:getcwd()})
         await self.bot.say('Enter commands after {} to execute them.'
                            ' `exit()` or `quit` to exit.'.format(self.prefix.replace("`", "\\`")))
 
@@ -136,20 +139,22 @@ class BetterTerminal:
             for page in pages:
                 await self.bot.send_message(ctx.message.channel, page)
             if self.cos == 'default':
-                await self.bot.say('```\nCurrent prompt type: {}[{}] ```\n'.format(self.cos, uname()[0].lower()))
+                await self.bot.say('```\nCurrent prompt type: {}[{}] ```\n'
+                                   ''.format(self.cos, uname()[0].lower()))
             else:
                 await self.bot.say('```\nCurrent prompt type: {} ```\n'.format(self.cos))
             return
 
         if not os.lower() in self.os and os != 'default':
-            await self.bot.say('Invalid prompt type.\nThe following once are valid:\n\n{}'.format(", ".join(self.os)))
+            await self.bot.say('Invalid prompt type.\nThe following once are valid:\n\n{}'
+                               ''.format(", ".join(self.os)))
             return
 
         os = os.lower()
 
         self.cos = os
         self.settings['cos'] = os
-        dataIO.save_json('data/betterterminal/settings.json', self.settings)
+        dataIO.save_json(abspath(dirname(argv[0])) + '/data/betterterminal/settings.json', self.settings)
         await self.bot.say('Changed prompt type to {} '.format(self.cos.replace("`", "\\`")))
 
     @cmdsettings.command(name="prefix", pass_context=True)
@@ -166,27 +171,30 @@ class BetterTerminal:
 
         self.prefix = prefix
         self.settings['prefix'] = prefix
-        dataIO.save_json('data/betterterminal/settings.json', self.settings)
+        dataIO.save_json(abspath(dirname(argv[0])) + '/data/betterterminal/settings.json', self.settings)
         await self.bot.say('Changed prefix to {} '.format(self.prefix.replace("`", "\\`")))
 
     async def on_message(self, message): # This is where the magic starts
 
-        if message.channel.id in self.sessions and self.enabled and message.author.id == self.bot.settings.owner: # I REPEAT DO NOT DELETE
+        if (message.channel.id in self.sessions and self.enabled and
+                message.author.id == self.bot.settings.owner): # DO NOT DELETE
 
             #TODO:
             #  Whitelist & Blacklists that cant be modified by the bot
 
-            if not dataIO.is_valid_json("data/betterterminal/settings.json"):
+            if not dataIO.is_valid_json(abspath(dirname(argv[0])) + '/data/betterterminal/settings.json'):
                 check_folder()
                 check_file()
-                self.settings = dataIO.load_json('data/betterterminal/settings.json')
+                self.settings = dataIO.load_json(abspath(dirname(argv[0])) + '/data/betterterminal/settings.json')
                 self.prefix = self.settings['prefix']
                 self.cc = self.settings['cc']
                 self.os = self.settings['os']
                 self.cos = self.settings['cos']
                 self.enabled = self.settings['enabled']
 
-            if message.content.startswith(self.prefix) or message.content.startswith('debugprefixcmd'):
+            if (message.content.startswith(self.prefix) or
+                    message.content.startswith('debugprefixcmd')):
+
                 if message.content.startswith(self.prefix):
                     command = message.content[len(self.prefix):]
                 else:
@@ -205,28 +213,31 @@ class BetterTerminal:
                     else:
                         command = self.cc[command]['linux']
 
-                if command == 'exit()' or command == 'quit':  # commands used for quiting cmd, same as for repl
+                if (command == 'exit()' or
+                        command == 'quit'):  # commands used for quiting cmd, same as for repl
+
                     await self.bot.send_message(message.channel, 'Exiting.')
                     self.sessions.pop(message.channel.id)
                     return
                 elif commands == 'exit':
                     await self.bot.send_message(message.channel, "")
-                if command.lower().find("apt-get install") != -1 and command.lower().find("-y") == -1:
+                if "apt-get install" in command.lower() and not "-y" in command.lower():
                     command = "{} -y".format(command) # forces apt-get to not ask for a prompt
 
                 if command.startswith('cd ') and command.split('cd ')[1]:
                     path = command.split('cd ')[1]
                     try:
                         chdir(path)
+                        self.sessions.update({message.channel.id:getcwd()})
+                        chdir(abspath(dirname(argv[0])))
                         return
-                    except:
-                        if path in listdir() or path.startswith('/'):
-                            shell = 'cd: {}: Permission denied'.format(path)
-                        else:
-                            shell = 'cd: {}: No such file or directory'.format(path)
+                    except FileNotFoundError:
+                        shell = 'cd: {}: Permission denied'.format(path)
+                    except PermissionError:
+                        shell = 'cd: {}: No such file or directory'.format(path)
                 else:
                     try:
-                        output = Popen(command, shell=True, stdout=PIPE,
+                        output = Popen(command, cwd=self.sessions[message.channel.id], shell=True, stdout=PIPE,
                                        stderr=STDOUT).communicate()[0]
                         error = False
                     except CalledProcessError as err:
@@ -247,16 +258,13 @@ class BetterTerminal:
                 else:
                     cos = self.cos
 
+                path = self.sessions[message.channel.id]
+                username = getuser()
+                system = uname()[1]
                 if cos in self.os:
-                    path = getcwd()
-                    username = getuser()
-                    system = uname()[1]
                     user = self.os[cos].format(
                         user=username, system=system, path=path)
                 else:
-                    path = getcwd()
-                    username = getuser()
-                    system = uname()[1]
                     user = self.os['linux'].format(user=username, system=system, path=path)
 
                 result = []
@@ -295,7 +303,7 @@ class BetterTerminal:
                                                               timeout=10)
                         try:
                             await self.bot.delete_message(note)
-                        except:
+                        except Exception:
                             pass
 
                         if msg is None:
@@ -312,9 +320,9 @@ class BetterTerminal:
 
 
 def check_folder():
-    if not exists("data/betterterminal"):
+    if not exists(abspath(dirname(argv[0])) + '/data/betterterminal'):
         print("[Terminal]Creating data/betterterminal folder...")
-        makedirs("data/betterterminal")
+        makedirs(abspath(dirname(argv[0])) + '/data/betterterminal')
 
 def check_file():
     jdict = {
@@ -332,9 +340,9 @@ def check_file():
         "enabled":True
         }
 
-    if not dataIO.is_valid_json("data/betterterminal/settings.json"):
+    if not dataIO.is_valid_json(abspath(dirname(argv[0])) + '/data/betterterminal/settings.json'):
         print("[BetterTerminal]Creating default settings.json...")
-        dataIO.save_json("data/betterterminal/settings.json", jdict)
+        dataIO.save_json(abspath(dirname(argv[0])) + '/data/betterterminal/settings.json', jdict)
 
 def setup(bot):
     check_folder()
