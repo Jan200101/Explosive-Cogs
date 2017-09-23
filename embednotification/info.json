@@ -4,5 +4,5 @@
     "NAME" : "embednotification",
     "SHORT" : "Allows you to quickly embed notification and set a nice color",
     "DESCRIPTION" : "Gives you the option to embed notification into a good looking embed with a colored sidebar which can be set using a hexadecimal color value",
-    "TAGS": ["embed","say","announcement","notification"]
+    "TAGS": ["embed","say","announcement","notification","sentry"]
 }

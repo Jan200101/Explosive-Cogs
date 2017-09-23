@@ -1,6 +1,6 @@
 from random import choice, randint
 from discord.ext import commands
-import discord
+from discord import Colour, errors, Embed
 from cogs.utils import checks
 
 class EmbedNotification:
@@ -16,14 +16,14 @@ class EmbedNotification:
 
         try:
             await self.bot.delete_message(ctx.message)
-        except:
+        except errors.Forbidden:
             if ctx.message.server.me.bot:
                 dest = ctx.message.author
                 msg = ('I need the `Manage Messages` permission on `{}` '
                        'to delete your message before it gets embeded.\n'
                        'This is done to ensure the bots embed is in '
                        'the same position your command was in.'
-                       ).format(ctx.message.channel.mention)
+                      ).format(ctx.message.channel.name)
             else:
                 dest = ctx.message.channel
                 msg = ('Your selfbot/This userbot is '
@@ -41,49 +41,55 @@ class EmbedNotification:
         except ValueError:
             color = '000000'
 
-        normaltext = u"\u2063" * randint(1, 10) # Generating a random number for a empty embed
+        normaltext = u"\u2063" * randint(1, 10) # Generating a random amount of nothing
 
-        data = discord.Embed(description=str(text), colour=discord.Colour(value=color))
+        data = Embed(description=str(text), colour=Colour(value=color))
 
         try:
             await self.bot.say(normaltext, embed=data)
-        except:
+        except errors.Forbidden:
             await self.bot.send_message(ctx.message.author,
                                         "I need the `Embed links` permission on `{}`"
                                         "to embed your message"
                                         "".format(ctx.message.server))
 
     @commands.command(hidden=True, pass_context=True, no_pm=True)
-    @checks.is_owner()
     async def embedsay(self, ctx, *, text: str):
         """The good old embedsay from Sentry-Cogs brought into embednotification.
         This Version has all features from embedsayadmin for normal and selfbots
         and it does not face the same restrictions as embednotifications."""
+
+        try:
+            await self.bot.delete_message(ctx.message)
+        except errors.Forbidden:
+            if ctx.message.server.me.bot:
+                dest = ctx.message.author
+                msg = ('I need the `Manage Messages` permission on `{}` '
+                       'to delete your message before it gets embeded.\n'
+                       'This is done to ensure the bots embed is in '
+                       'the same position your command was in.'
+                      ).format(ctx.message.channel.name)
+            else:
+                dest = ctx.message.channel
+                msg = ('Your selfbot/This userbot is '
+                       'able to be used by others.\n'
+                       'This is breaking Discord\'s TOS and '
+                       'can be punished by them.\n'
+                       'This message was sent by embednotification.py')
+
+            await self.bot.send_message(dest, msg)
+            return
+
+        normaltext = u"\u2063" * randint(1, 10) # Generating a random amount of nothing
+
+        colour = int(''.join([choice('0123456789ABCDEF') for x in range(5)]), 16)
+        data = Embed(description=str(text), colour=Colour(value=colour))
         if ctx.message.server.me.bot:
-            try:
-                await self.bot.delete_message(ctx.message)
-            except:
-                return
-        else:
-            try:
-                await self.bot.delete_message(ctx.message)
-            except:
-                await self.bot.send_message(ctx.message.channel,
-                                            'Your selfbot/This userbot is '
-                                            'able to be used by others.\n'
-                                            'This is breaking Discords TOS and'
-                                            ' can be punished by them.\n'
-                                            'This messagte was send by embednotification.py')
-
-                return
-
-        normaltext = u"\u2063" * randint(1, 10) # Generating a random number for a empty embed
-
-        data = discord.Embed(description=str(text), colour=discord.Colour(value=int(''.join([choice('0123456789ABCDEF') for x in range(5)]), 16)))
+            data.set_author(name=ctx.message.author.display_name)
 
         try:
             await self.bot.say(normaltext, embed=data)
-        except:
+        except errors.Forbidden:
             await self.bot.send_message(ctx.message.author,
                                         "I need the `Embed links` permission on `{}`"
                                         " to embed your message".format(ctx.message.server))
