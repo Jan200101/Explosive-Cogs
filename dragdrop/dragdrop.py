@@ -1,6 +1,7 @@
 from os import listdir
 from __main__ import set_cog
 import aiohttp
+from os import popen
 from .utils.checks import is_owner
 from discord.ext import commands
 
@@ -33,7 +34,8 @@ class DragDrop:
             await self.bot.say('No cog recieved')
         elif msg.attachments[0]['filename'].endswith('.py'):
             if msg.attachments[0]['filename'] in listdir('cogs'):
-                await self.bot.say(msg.attachments[0]['filename'][:-3] + ' is already installed.\nOverwrite it? (yes/no)')
+                await self.bot.say(msg.attachments[0]['filename'][:-3] +
+                                   ' is already installed.\nOverwrite it? (yes/no)')
                 answer = await self.bot.wait_for_message(timeout=15, author=ctx.message.author)
                 if answer is None:
                     await self.bot.say('Keeping old cog.')
@@ -43,10 +45,16 @@ class DragDrop:
                     return
                 await owner.unload.callback(owner, cog_name=msg.attachments[0]['filename'][:-3])
 
+            try:
+                commithash = popen('git rev-parse --verify HEAD').read()[:7]
+            finally:
+                if not commithash:
+                    commithash = 'fc32524' # Lets just use the latest one
+
             gateway = msg.attachments[0]['url']
             payload = {}
             payload['limit'] = 1
-            headers = {'user-agent': 'Python-Red-cog/2.0'}
+            headers = {'user-agent': 'Python-Red-Discordbot/{}'.format(commithash)}
 
             session = aiohttp.ClientSession()
             async with session.get(gateway, params=payload, headers=headers) as r:
@@ -82,5 +90,5 @@ def setup(bot):
         bot.get_cog('Owner')
     except:
         raise MissingCog('Core cog is missing')
-        return
+
     bot.add_cog(DragDrop(bot))
