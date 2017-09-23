@@ -1,15 +1,15 @@
 from random import randint, choice
-import discord
+from discord import errors, Channel, Embed, Colour
 from discord.ext import commands
 
-class Channelinfo:
+class General:
     """Shows Channel infos."""
 
     def __init__(self, bot):
         self.bot = bot
 
     @commands.command(pass_context=True, no_pm=True)
-    async def channelinfo(self, ctx, *, channel: discord.Channel=None):
+    async def channelinfo(self, ctx, *, channel: Channel = None):
         """Shows channel informations"""
 
         if not channel:
@@ -30,8 +30,8 @@ class Channelinfo:
         colour = ''.join([choice('0123456789ABCDEF') for x in range(6)])
         colour = int(colour, 16)
 
-        data = discord.Embed(description="Channel ID: " + channel.id,
-                             colour=discord.Colour(value=colour))
+        data = Embed(description="Channel ID: " + channel.id,
+                     colour=Colour(value=colour))
 
         if "{}".format(channel.is_default) == "True":
             data.add_field(name="Default Channel", value="Yes")
@@ -62,9 +62,9 @@ class Channelinfo:
 
         try:
             await self.bot.say(emptyrand, embed=data)
-        except:
+        except errors.Forbidden:
             await self.bot.say("I need the `Embed links` permission to send this")
 
 
 def setup(bot):
-    bot.add_cog(Channelinfo(bot))
+    bot.add_cog(General(bot))
