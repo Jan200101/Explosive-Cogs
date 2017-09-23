@@ -11,7 +11,7 @@ class Penes:
 
     @commands.command()
     async def penes(self, user : discord.Member):
-        """Detects the users internet penis length"""
+        """Detects the users internet penis length\nEvery Willy will be huge and unrealistic"""
         pl = 0
         for x in str(int(hashlib.sha1(user.id.encode('utf-8')).hexdigest(), 16) % (10 ** 8)):
             pl += int(x)
