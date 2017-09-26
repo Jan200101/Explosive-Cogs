@@ -4,5 +4,6 @@
     "NAME" : "BetterTerminal",
     "SHORT" : "a simple Terminal cog",
     "DESCRIPTION" : "a simple Terminal cog usable by any Python based Discord bot",
-    "TAGS": ["terminal","cmd","prompt","windows","linux","useful","sentry"]
+    "TAGS": ["terminal","cmd","prompt","windows","linux","useful","sentry"],
+    "HIDDEN": true
 }

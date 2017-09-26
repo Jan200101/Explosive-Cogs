@@ -3,6 +3,7 @@ from re import sub
 from sys import argv
 from os.path import exists, abspath, dirname
 from os import makedirs, getcwd, chdir, listdir, popen as ospopen
+from asyncio import sleep
 from getpass import getuser
 from platform import uname, python_version
 from discord.ext import commands
@@ -227,9 +228,11 @@ class BetterTerminal:
                 if command.startswith('cd ') and command.split('cd ')[1]:
                     path = command.split('cd ')[1]
                     try:
+                        oldpath = abspath(dirname(argv[0]))
                         chdir(path)
                         self.sessions.update({message.channel.id:getcwd()})
-                        chdir(abspath(dirname(argv[0])))
+                        await sleep(1)
+                        chdir(oldpath)
                         return
                     except FileNotFoundError:
                         shell = 'cd: {}: Permission denied'.format(path)
