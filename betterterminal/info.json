@@ -5,5 +5,5 @@
     "SHORT" : "a simple Terminal cog",
     "DESCRIPTION" : "a simple Terminal cog usable by any Python based Discord bot",
     "TAGS": ["terminal","cmd","prompt","windows","linux","useful","sentry"],
-    "HIDDEN": true
+    "HIDDEN": false
 }
