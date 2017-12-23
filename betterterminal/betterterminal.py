@@ -240,9 +240,9 @@ class BetterTerminal:
                     path = command.split('cd ')[1]
                     try:
                         oldpath = abspath(dirname(argv[0]))
+                        chdir(self.sessions[message.channel.id])
                         chdir(path)
                         self.sessions.update({message.channel.id:getcwd()})
-                        await sleep(1)
                         chdir(oldpath)
                         return
                     except FileNotFoundError:
