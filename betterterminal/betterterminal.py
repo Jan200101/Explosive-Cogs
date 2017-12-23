@@ -2,10 +2,16 @@ from subprocess import Popen, CalledProcessError, PIPE, STDOUT
 from re import sub
 from sys import argv
 from os.path import exists, abspath, dirname
-from os import makedirs, getcwd, chdir, listdir, popen as ospopen
+from os import makedirs, devnull, getcwd, chdir, listdir, popen as ospopen
 from asyncio import sleep
 from getpass import getuser
 from platform import uname, python_version
+
+try:
+    from subprocess import DEVNULL # Python 3
+except ImportError:
+    DEVNULL = open(devnull, 'r+b', 0)
+
 from discord.ext import commands
 from cogs.utils import checks
 from cogs.utils.dataIO import dataIO
@@ -17,9 +23,10 @@ class BetterTerminal:
 
     def __init__(self, bot):
         self.bot = bot
-        self.settings = dataIO.load_json(abspath(dirname(argv[0])) + '/data/betterterminal/settings.json')
+        self.settings = dataIO.load_json(abspath(dirname(argv[0])) +
+                                         '/data/betterterminal/settings.json')
         self.prefix = self.settings['prefix']
-        self.cc = self.settings['cc']
+        self.alias = self.settings['alias']
         self.os = self.settings['os']
         self.cos = self.settings['cos']
         self.enabled = self.settings['enabled']
@@ -93,15 +100,17 @@ class BetterTerminal:
 
         # Rereading the values that were already read in __init__ to ensure its always up to date
         try:
-            self.settings = dataIO.load_json(abspath(dirname(argv[0])) + '/data/betterterminal/settings.json')
-        except:
+            self.settings = dataIO.load_json(abspath(dirname(argv[0])) +
+                                             '/data/betterterminal/settings.json')
+        except Exception:
             # Pretend its the worst case and reset the settings
             check_folder()
             check_file()
-            self.settings = dataIO.load_json(abspath(dirname(argv[0])) + '/data/betterterminal/settings.json')
+            self.settings = dataIO.load_json(abspath(dirname(argv[0])) +
+                                             '/data/betterterminal/settings.json')
 
         self.prefix = self.settings['prefix']
-        self.cc = self.settings['cc']
+        self.alias = self.settings['alias']
         self.os = self.settings['os']
 
         self.sessions.update({ctx.message.channel.id:getcwd()})
@@ -117,11 +126,12 @@ class BetterTerminal:
             for page in pages:
                 await self.bot.send_message(ctx.message.channel, page)
 
-    @cmdsettings.group(name="customcom", pass_context=True)
+    @cmdsettings.group(name="alias", pass_context=True)
     @checks.is_owner()
-    async def _cc(self, ctx):
-        """Custom commands for BetterTerminal"""
-        await self.bot.say('This feature is WIP')
+    async def _alias(self, ctx):
+        """Custom aliases for BetterTerminal"""
+        await self.bot.say('This feature is still being worked on.\n'
+                           'Currently you can add aliases via the config file')
         """
         if ctx.invoked_subcommand is None:
             pages = self.bot.formatter.format_help_for(ctx, ctx.command)
@@ -133,7 +143,7 @@ class BetterTerminal:
     @checks.is_owner()
     async def _os(self, ctx, os: str = None):
         """Set the prompt type of BetterTerminal to emulate another Operatingsystem.
-        these 'emulations' arent 100% accurate on other Operatingsystems"""
+        these 'emulations' arent 100% accurate on other Operating systems"""
 
         if os is None:
             pages = self.bot.formatter.format_help_for(ctx, ctx.command)
@@ -155,7 +165,8 @@ class BetterTerminal:
 
         self.cos = os
         self.settings['cos'] = os
-        dataIO.save_json(abspath(dirname(argv[0])) + '/data/betterterminal/settings.json', self.settings)
+        dataIO.save_json(abspath(dirname(argv[0])) +
+                         '/data/betterterminal/settings.json', self.settings)
         await self.bot.say('Changed prompt type to {} '.format(self.cos.replace("`", "\\`")))
 
     @cmdsettings.command(name="prefix", pass_context=True)
@@ -172,7 +183,9 @@ class BetterTerminal:
 
         self.prefix = prefix
         self.settings['prefix'] = prefix
-        dataIO.save_json(abspath(dirname(argv[0])) + '/data/betterterminal/settings.json', self.settings)
+        dataIO.save_json(abspath(dirname(argv[0])) +
+                         '/data/betterterminal/settings.json', self.settings)
+
         await self.bot.say('Changed prefix to {} '.format(self.prefix.replace("`", "\\`")))
 
     async def on_message(self, message): # This is where the magic starts
@@ -183,12 +196,14 @@ class BetterTerminal:
             #TODO:
             #  Whitelist & Blacklists that cant be modified by the bot
 
-            if not dataIO.is_valid_json(abspath(dirname(argv[0])) + '/data/betterterminal/settings.json'):
+            if not dataIO.is_valid_json(abspath(dirname(argv[0])) +
+                                        '/data/betterterminal/settings.json'):
                 check_folder()
                 check_file()
-                self.settings = dataIO.load_json(abspath(dirname(argv[0])) + '/data/betterterminal/settings.json')
+                self.settings = dataIO.load_json(abspath(dirname(argv[0])) +
+                                                 '/data/betterterminal/settings.json')
                 self.prefix = self.settings['prefix']
-                self.cc = self.settings['cc']
+                self.alias = self.settings['alias']
                 self.os = self.settings['os']
                 self.cos = self.settings['cos']
                 self.enabled = self.settings['enabled']
@@ -208,11 +223,11 @@ class BetterTerminal:
                 if not command: # if you have entered nothing it will just ignore
                     return
 
-                if command in self.cc:
-                    if self.cc[command][uname()[0].lower()]:
-                        command = self.cc[command][uname()[0].lower()]
+                if command in self.alias:
+                    if self.alias[command][uname()[0].lower()]:
+                        command = self.alias[command][uname()[0].lower()]
                     else:
-                        command = self.cc[command]['linux']
+                        command = self.alias[command]['linux']
 
                 if (command == 'exit()' or
                         command == 'quit'):  # commands used for quiting cmd, same as for repl
@@ -220,10 +235,6 @@ class BetterTerminal:
                     await self.bot.send_message(message.channel, 'Exiting.')
                     self.sessions.pop(message.channel.id)
                     return
-                elif commands == 'exit':
-                    await self.bot.send_message(message.channel, "")
-                if "apt-get install" in command.lower() and not "-y" in command.lower():
-                    command = "{} -y".format(command) # forces apt-get to not ask for a prompt
 
                 if command.startswith('cd ') and command.split('cd ')[1]:
                     path = command.split('cd ')[1]
@@ -240,8 +251,9 @@ class BetterTerminal:
                         shell = 'cd: {}: No such file or directory'.format(path)
                 else:
                     try:
-                        output = Popen(command, cwd=self.sessions[message.channel.id], shell=True, stdout=PIPE,
-                                       stderr=STDOUT).communicate()[0]
+                        output = Popen(command, cwd=self.sessions[message.channel.id],
+                                       shell=True, stdout=PIPE,
+                                       stderr=STDOUT, stdin=DEVNULL).communicate()[0]
                         error = False
                     except CalledProcessError as err:
                         output = err.output
@@ -253,6 +265,7 @@ class BetterTerminal:
                     return
 
                 shell = sub('/bin/sh: .: ', '', shell)
+
                 if "\n" in shell[:-2]:
                     shell = '\n' + shell
 
@@ -330,11 +343,11 @@ def check_folder():
 def check_file():
     jdict = {
         "prefix":">",
-        "cc":{'test' : {'linux':'printf "Hello.\n'
-                                'This is a custom command made using the magic of python."',
-                        'windows':'echo Hello. '
-                                  'This is a custom command made using the magic of python.'}
-             },
+        "alias":{'alias example' : {'linux':'printf "Hello.\n'
+                                            'This is a alias made using the magic of python."',
+                                    'windows':'echo Hello. '
+                                              'This is alias made using the magic of python.'}
+                },
         "os":{
             'windows':'{path}>',
             'linux':'{user}@{system}:{path} $ '
